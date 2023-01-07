@@ -9,7 +9,7 @@ from functions.geodetic_tools import *
 from functions.prediction import prediction
 from functions.timesync import timesync
 from functions.readIMARdata import *
-from functions.strapdown import strapdown_algorithm, strapdown_algorithm_2D
+from functions.strapdown import strapdown_algorithm, strapdown_algorithm_2D, strapdown_algorithm_2D_new
 
 
 ## Mobile Sensing and Robotics - Exercise 2 - IGG Bonn, 12.10.20
@@ -35,62 +35,41 @@ dt = 1/f                  # Measuring rate [s]
 x = imar_data.gpsUTM[:,0]                 # East UTM [m]
 y = imar_data.gpsUTM[:,1]                 # North UTM [m]
 a = -imar_data.acceleration[:,0]          # acceleration x [m/s^2]
+ay = -imar_data.acceleration[:,1]          # acceleration x [m/s^2]
 omega = imar_data.angularvelocity[:,2]    # angular velocity z [rad/s]
-# print(a.shape)
-# print(omega.shape)
 
 # -----------------------------------------------------
 # Strapdown algorithm
 imar_data_sd = IMARdata()
 imar_data_sd.readIMAR("./data/IMAR.mat", correctedIMUdata = True)
-
-
+# print(imar_data_sd.rpy_ned[:,2])
 # -----------------------------------------------------
 # Strapdown algorithm
-x_initial_value = imar_data_sd.gpsLLA[0, :] # LLA !
-p_s, v_s, euler_angle_s = strapdown_algorithm(-imar_data_sd.acceleration[:,0],
-                                            -imar_data_sd.acceleration[:,1],
-                                            -imar_data_sd.acceleration[:,2],
-                                            imar_data_sd.angularvelocity[:,0],
-                                            imar_data_sd.angularvelocity[:,1],
-                                            imar_data_sd.angularvelocity[:,2], 
-                                            dt,
-                                            x_initial_value)
+# x_initial_value = imar_data_sd.gpsLLA[0, :] # LLA !
+# p_s, v_s, euler_angle_s = strapdown_algorithm(-imar_data_sd.acceleration[:,0],
+#                                             -imar_data_sd.acceleration[:,1],
+#                                             -imar_data_sd.acceleration[:,2],
+#                                             imar_data_sd.angularvelocity[:,0],
+#                                             imar_data_sd.angularvelocity[:,1],
+#                                             imar_data_sd.angularvelocity[:,2], 
+#                                             dt,
+#                                             x_initial_value)
 
-lat, long, altitude = ecef2lla(p_s[0, :], p_s[1, :], p_s[2, :])
-N, E = ell2utm(rad2deg(lat), rad2deg(long), 32)
+# lat, long, altitude = ecef2lla(p_s[0, :], p_s[1, :], p_s[2, :])
+# N, E = ell2utm(rad2deg(lat), rad2deg(long), 32)
 
-# Trajectory plot
-plt.plot(x,y, '.b', markersize=12)
-plt.plot(E, N, '.g')
-plt.axis('equal')
-plt.title('Question 1', fontsize=14, fontweight='bold')
-plt.xlabel('UTM (East) [m]', fontsize=12, fontweight='bold')
-plt.ylabel('UTM (North) [m]', fontsize=12, fontweight='bold')
-plt.legend(['GPS Measurements', 'Strapdown'])
-plt.grid(color='k', linestyle='-', linewidth=0.5)
-plt.show()
+# # Trajectory plot
+# plt.plot(x,y, '.b', markersize=12)
+# plt.plot(E, N, '.g')
+# plt.axis('equal')
+# plt.title('Question 1', fontsize=14, fontweight='bold')
+# plt.xlabel('UTM (East) [m]', fontsize=12, fontweight='bold')
+# plt.ylabel('UTM (North) [m]', fontsize=12, fontweight='bold')
+# plt.legend(['GPS Measurements', 'Strapdown'])
+# plt.grid(color='k', linestyle='-', linewidth=0.5)
+# plt.show()
 
 
-# -----------------------------------------------------
-# Strapdown algorithm in 2D
-av = imar_data_sd.angularvelocity[:,2]
-p, v, a1 = strapdown_algorithm_2D(-imar_data_sd.acceleration[:,0],
-                    -imar_data_sd.acceleration[:,1],
-                    -av, 
-                    dt,
-                    x[0], y[0])
-
-# Trajectory plot
-plt.plot(x,y, '.b', markersize=12)
-plt.plot(p[0], p[1], '.g')
-plt.axis('equal')
-plt.title('Question 2', fontsize=14, fontweight='bold')
-plt.xlabel('UTM (East) [m]', fontsize=12, fontweight='bold')
-plt.ylabel('UTM (North) [m]', fontsize=12, fontweight='bold')
-plt.legend(['GPS Measurements', 'Strapdown'])
-plt.grid(color='k', linestyle='-', linewidth=0.5)
-plt.show()
 
 # -----------------------------------------------------
 # Time Synchronisation
@@ -286,9 +265,38 @@ print('filter started ... ')
 # end MAIN loop
 # -------------------------------------------
 
+
+###### new
+
+# -----------------------------------------------------
+# Strapdown algorithm in 2D
+
+# av = imar_data_sd.angularvelocity[:,2]
+# a_imu = imar_data_sd.acceleration[:,0]
+# p, v, a1 = strapdown_algorithm_2D(-a_kf,
+#                     -imar_data_sd.acceleration[:,1],
+#                     av_kf, 
+#                     dt,
+#                     x[0], y[0])
+
+# av_raw = imar_data_sd.angularvelocity[:,2]
+
+    
+# Trajectory plot
+# plt.plot(x,y, '.b', markersize=12)
+# plt.plot(p[0], p[1], '.g')
+# plt.axis('equal')
+# plt.title('Question 2', fontsize=14, fontweight='bold')
+# plt.xlabel('UTM (East) [m]', fontsize=12, fontweight='bold')
+# plt.ylabel('UTM (North) [m]', fontsize=12, fontweight='bold')
+# plt.legend(['GPS Measurements', 'Strapdown'])
+# plt.grid(color='k', linestyle='-', linewidth=0.5)
+# plt.show()
+
+###### new
 print( 100, '%')
 print('... done')
-
+# print(xstate[:, 3])
 # --------------------------------------------------- #
 # ########### Plot EKF results ################ #
 # --------------------------------------------------- #
@@ -297,8 +305,8 @@ print('... done')
 # reduce plot by indexing
 # idx_plot = np.arange(start=0, stop=nbr, step=10, dtype=int)
 
-# -------------------------------------------
-# Trajectory plot
+# # -------------------------------------------
+# # Trajectory plot
 # plt.plot(x,y, '.b', markersize=12)
 # plt.plot(xstate[idx_plot,1], xstate[idx_plot,2], '.r')
 # plt.axis('equal')
@@ -335,3 +343,62 @@ print('... done')
 
 # plt.show()
 
+
+
+
+
+######################## YAW CODE ####################################
+# yaw_kf = xstate[:, 3]
+# av_kf = xstate[:, 4]
+# a_kf = xstate[:, 6]
+# yaw_rpy_ned = imar_data_sd.rpy_ned[:,2]
+# omega = imar_data.angularvelocity[:,2]
+
+# yaw_strapdown = strapdown_algorithm_2D_new(yaw_rpy_ned, a_kf, omega, dt, x, y)
+# time_test = imar_data_sd.imutime
+
+# plt.scatter(time_test, yaw_kf)
+# plt.scatter(time_test, yaw_strapdown)
+# plt.scatter(time_test, yaw_rpy_ned)
+# plt.legend(["yaw_kf", "yaw_strapdown", "yaw_rpy_ned"])
+# plt.title("yaw_kf vs yaw_strapdown[av correctted y start = -0.81] vs yaw_rpy_ned", fontsize=14, fontweight='bold' )
+# plt.show()
+######################## YAW CODE ####################################
+
+# ####################### V CODE ####################################
+# v_kf = xstate[:, 5]
+# a_kf = xstate[:, 6]
+# yaw_rpy_ned = imar_data_sd.rpy_ned[:,2]
+# accx = -imar_data.acceleration[:,0]
+# accy = -imar_data.acceleration[:,1]
+# omega = imar_data.angularvelocity[:,2]
+
+# yaw_strapdown, vs_strapdown_m = strapdown_algorithm_2D_new(yaw_rpy_ned, accx, accy, omega, dt, x, y)
+# time_test = imar_data_sd.imutime
+
+# plt.scatter(time_test, vs_strapdown_m)
+# plt.scatter(time_test, v_kf)
+# plt.legend(["vs_strapdown_m[-accx, -accy]", "v_kf"])
+# plt.title("vs_strapdown_m[-accx, -accy] vs v_kf", fontsize=14, fontweight='bold' )
+# plt.show()
+# ####################### V CODE ####################################
+
+####################### V CODE ####################################
+yaw_rpy_ned = imar_data_sd.rpy_ned[:,2]
+accx = -imar_data.acceleration[:,0]
+accy = -imar_data.acceleration[:,1]
+omega = imar_data.angularvelocity[:,2]
+
+_, _, x_strapdown, y_strapdown = strapdown_algorithm_2D_new(yaw_rpy_ned, accx, accy, omega, dt, x, y)
+time_test = imar_data_sd.imutime
+
+plt.plot(x,y, '.b', markersize=12)
+plt.plot(x_strapdown, y_strapdown, '.g')
+plt.axis('equal')
+plt.title('GPS vs Strapdown', fontsize=14, fontweight='bold')
+plt.xlabel('UTM (East) [m]', fontsize=12, fontweight='bold')
+plt.ylabel('UTM (North) [m]', fontsize=12, fontweight='bold')
+plt.legend(['GPS Measurements', 'Strapdown'])
+plt.grid(color='k', linestyle='-', linewidth=0.5)
+plt.show()
+####################### V CODE ####################################
