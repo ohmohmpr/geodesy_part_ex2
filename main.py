@@ -9,7 +9,7 @@ from functions.geodetic_tools import *
 from functions.prediction import prediction
 from functions.timesync import timesync
 from functions.readIMARdata import *
-from functions.strapdown import strapdown_algorithm, strapdown_algorithm_2D, strapdown_algorithm_2D_new
+from functions.strapdown import strapdown_algorithm
 
 
 ## Mobile Sensing and Robotics - Exercise 2 - IGG Bonn, 12.10.20
@@ -35,41 +35,14 @@ dt = 1/f                  # Measuring rate [s]
 x = imar_data.gpsUTM[:,0]                 # East UTM [m]
 y = imar_data.gpsUTM[:,1]                 # North UTM [m]
 a = -imar_data.acceleration[:,0]          # acceleration x [m/s^2]
-ay = -imar_data.acceleration[:,1]          # acceleration x [m/s^2]
 omega = imar_data.angularvelocity[:,2]    # angular velocity z [rad/s]
 
 # -----------------------------------------------------
 # Strapdown algorithm
-imar_data_sd = IMARdata()
-imar_data_sd.readIMAR("./data/IMAR.mat", correctedIMUdata = True)
-# print(imar_data_sd.rpy_ned[:,2])
-# -----------------------------------------------------
-# Strapdown algorithm
-# x_initial_value = imar_data_sd.gpsLLA[0, :] # LLA !
-# p_s, v_s, euler_angle_s = strapdown_algorithm(-imar_data_sd.acceleration[:,0],
-#                                             -imar_data_sd.acceleration[:,1],
-#                                             -imar_data_sd.acceleration[:,2],
-#                                             imar_data_sd.angularvelocity[:,0],
-#                                             imar_data_sd.angularvelocity[:,1],
-#                                             imar_data_sd.angularvelocity[:,2], 
-#                                             dt,
-#                                             x_initial_value)
+accx = -imar_data.acceleration[:,0]
+accy = -imar_data.acceleration[:,1]
 
-# lat, long, altitude = ecef2lla(p_s[0, :], p_s[1, :], p_s[2, :])
-# N, E = ell2utm(rad2deg(lat), rad2deg(long), 32)
-
-# # Trajectory plot
-# plt.plot(x,y, '.b', markersize=12)
-# plt.plot(E, N, '.g')
-# plt.axis('equal')
-# plt.title('Question 1', fontsize=14, fontweight='bold')
-# plt.xlabel('UTM (East) [m]', fontsize=12, fontweight='bold')
-# plt.ylabel('UTM (North) [m]', fontsize=12, fontweight='bold')
-# plt.legend(['GPS Measurements', 'Strapdown'])
-# plt.grid(color='k', linestyle='-', linewidth=0.5)
-# plt.show()
-
-
+x_strapdown, y_strapdown, _ , _ = strapdown_algorithm(accx, accy, omega, dt, x, y)
 
 # -----------------------------------------------------
 # Time Synchronisation
@@ -205,120 +178,91 @@ print('filter started ... ')
 # -------------------------------------------
 # MAIN KF Loop
 
-# for i in range(0, nbr ): 
-# # for i in range(0, 100000):
-#     # -------------------------------------------
-#     # percent update 
-#     if (i / nbr) > percent:
-#         print('%1.0f' % (percent * 100), '% / 100%' )
-#         percent += 0.05
+for i in range(0, nbr ):
+    # -------------------------------------------
+    # percent update 
+    if (i / nbr) > percent:
+        print('%1.0f' % (percent * 100), '% / 100%' )
+        percent += 0.05
 
-#     # -------------------------------------------
-#     # Prediction Step
-#     x_bar, Sx_bar = prediction( xk, S_xkxk, S_wkwk, dt, i )
-#     xstate[i,0] = imar_data.imutime[i]
-#     xstate[i,1:7] = x_bar
-#     # -------------------------------------------
-#     # Update Step (IMU only)
+    # -------------------------------------------
+    # Prediction Step
+    x_bar, Sx_bar = prediction( xk, S_xkxk, S_wkwk, dt, i )
+    xstate[i,0] = imar_data.imutime[i]
+    xstate[i,1:7] = x_bar
+    # -------------------------------------------
+    # Update Step (IMU only)
 
-#     if ( np.isnan( L[1,i]) == True ):
+    if ( np.isnan( L[1,i]) == True ):
 
-#         # Kalman Gain Matrix
-#         K = Sx_bar @ H.T @ np.linalg.inv(H @ Sx_bar @ H.T + Sll)
+        # Kalman Gain Matrix
+        K = Sx_bar @ H.T @ np.linalg.inv(H @ Sx_bar @ H.T + Sll)
 
-#         # Update state vector
-#         x_dach = x_bar + K[:, 2:] @ (L[3:,i] - H[2:4, :] @ x_bar)
+        # Update state vector
+        x_dach = x_bar + K[:, 2:] @ (L[3:,i] - H[2:4, :] @ x_bar)
 
-#         # Covariance matrix states 
-#         Sx_dach = (np.identity(6) - K @ H) @ Sx_bar
+        # Covariance matrix states 
+        Sx_dach = (np.identity(6) - K @ H) @ Sx_bar
 
-#         # save current estimate
-#         xstate[i,0] = imar_data.imutime[i]
-#         xstate[i,1:7] = x_dach
+        # save current estimate
+        xstate[i,0] = imar_data.imutime[i]
+        xstate[i,1:7] = x_dach
         
-#         # update states for next iteration
-#         xk = x_dach
-#         S_xkxk = Sx_dach
+        # update states for next iteration
+        xk = x_dach
+        S_xkxk = Sx_dach
     
-#     # -------------------------------------------
-#     # Update (GPS + IMU)
-#     else:
+    # -------------------------------------------
+    # Update (GPS + IMU)
+    else:
 
 
-#         # Kalman Gain Matrix
-#         K = Sx_bar @ H.T @ np.linalg.inv(H @ Sx_bar @ H.T + Sll)
+        # Kalman Gain Matrix
+        K = Sx_bar @ H.T @ np.linalg.inv(H @ Sx_bar @ H.T + Sll)
 
-#         # Update state vector
-#         x_dach = x_bar + K @ (L[1:,i] - H @ x_bar)
+        # Update state vector
+        x_dach = x_bar + K @ (L[1:,i] - H @ x_bar)
 
-#         # Covariance matrix states 
-#         Sx_dach = (np.identity(6) - K @ H) @ Sx_bar
+        # Covariance matrix states 
+        Sx_dach = (np.identity(6) - K @ H) @ Sx_bar
 
-#         # save estimation
-#         xstate[i,0] = imar_data.imutime[i]
-#         xstate[i,1:7] = x_dach
+        # save estimation
+        xstate[i,0] = imar_data.imutime[i]
+        xstate[i,1:7] = x_dach
 
-#         # update states for next iteration
-#         xk = x_dach
-#         S_xkxk = Sx_dach
+        # update states for next iteration
+        xk = x_dach
+        S_xkxk = Sx_dach
 
 # end MAIN loop
 # -------------------------------------------
 
-
-###### new
-
-# -----------------------------------------------------
-# Strapdown algorithm in 2D
-
-# av = imar_data_sd.angularvelocity[:,2]
-# a_imu = imar_data_sd.acceleration[:,0]
-# p, v, a1 = strapdown_algorithm_2D(-a_kf,
-#                     -imar_data_sd.acceleration[:,1],
-#                     av_kf, 
-#                     dt,
-#                     x[0], y[0])
-
-# av_raw = imar_data_sd.angularvelocity[:,2]
-
-    
-# Trajectory plot
-# plt.plot(x,y, '.b', markersize=12)
-# plt.plot(p[0], p[1], '.g')
-# plt.axis('equal')
-# plt.title('Question 2', fontsize=14, fontweight='bold')
-# plt.xlabel('UTM (East) [m]', fontsize=12, fontweight='bold')
-# plt.ylabel('UTM (North) [m]', fontsize=12, fontweight='bold')
-# plt.legend(['GPS Measurements', 'Strapdown'])
-# plt.grid(color='k', linestyle='-', linewidth=0.5)
-# plt.show()
-
-###### new
 print( 100, '%')
 print('... done')
-# print(xstate[:, 3])
+
 # --------------------------------------------------- #
 # ########### Plot EKF results ################ #
 # --------------------------------------------------- #
 
 # -------------------------------------------
 # reduce plot by indexing
-# idx_plot = np.arange(start=0, stop=nbr, step=10, dtype=int)
+idx_plot = np.arange(start=0, stop=nbr, step=10, dtype=int)
 
-# # -------------------------------------------
-# # Trajectory plot
-# plt.plot(x,y, '.b', markersize=12)
+# -------------------------------------------
+# Trajectory plot
+# plt.plot(x, y, '.b', markersize=12)
 # plt.plot(xstate[idx_plot,1], xstate[idx_plot,2], '.r')
+# plt.plot(x_strapdown, y_strapdown, '.g')
 # plt.axis('equal')
-# plt.title('EKF Trajectory and GPS Measurements', fontsize=14, fontweight='bold')
+# plt.title('GPS Measurements, EKF and Strapdown Trajectory', fontsize=14, fontweight='bold')
 # plt.xlabel('UTM (East) [m]', fontsize=12, fontweight='bold')
 # plt.ylabel('UTM (North) [m]', fontsize=12, fontweight='bold')
 # plt.legend(['GPS Measurements', 'EKF Trajectory', 'Strapdown'])
 # plt.grid(color='k', linestyle='-', linewidth=0.5)
 # plt.show()
 
-# # -------------------------------------------
-# # Acceleration & Angular Velocity
+# -------------------------------------------
+# Acceleration & Angular Velocity
 
 # plt.subplot(211)
 # plt.plot( imar_data.imutime , a, '.b' )
@@ -339,9 +283,33 @@ print('... done')
 # plt.grid(color='k', linestyle='-', linewidth=0.5)
 # plt.show()
 
-# # -------------------------------------------
+# -------------------------------------------
 
 # plt.show()
+
+
+
+# -------------------------------------------
+# Trajectory plot
+offset_x = 364870
+offset_y = 5621132
+plt.plot(x - offset_x, y - offset_y, 'b', markersize=12)
+plt.plot(xstate[idx_plot,1] - offset_x, xstate[idx_plot,2] - offset_y, 'r')
+plt.plot(x_strapdown - offset_x, y_strapdown - offset_y, 'g')
+plt.axis('equal')
+plt.title('Trajectory Analysis - Local grid', fontsize=14, fontweight='bold')
+plt.xlabel('Easting [m]', fontsize=12, fontweight='bold')
+plt.ylabel('Northing [m]', fontsize=12, fontweight='bold')
+plt.legend(['GPS Measurements', 'EKF Trajectory', 'Strapdown'])
+plt.grid(color='k', linestyle='-', linewidth=0.5)
+plt.show()
+
+
+
+
+
+
+
 
 
 
@@ -384,21 +352,20 @@ print('... done')
 # ####################### V CODE ####################################
 
 ####################### V CODE ####################################
-yaw_rpy_ned = imar_data_sd.rpy_ned[:,2]
-accx = -imar_data.acceleration[:,0]
-accy = -imar_data.acceleration[:,1]
-omega = imar_data.angularvelocity[:,2]
+# accx = -imar_data.acceleration[:,0]
+# accy = -imar_data.acceleration[:,1]
+# omega = imar_data.angularvelocity[:,2]
 
-_, _, x_strapdown, y_strapdown = strapdown_algorithm_2D_new(yaw_rpy_ned, accx, accy, omega, dt, x, y)
-time_test = imar_data_sd.imutime
+# x_strapdown, y_strapdown, _ , _ = strapdown_algorithm(accx, accy, omega, dt, x, y)
+# time_test = imar_data.imutime
 
-plt.plot(x,y, '.b', markersize=12)
-plt.plot(x_strapdown, y_strapdown, '.g')
-plt.axis('equal')
-plt.title('GPS vs Strapdown', fontsize=14, fontweight='bold')
-plt.xlabel('UTM (East) [m]', fontsize=12, fontweight='bold')
-plt.ylabel('UTM (North) [m]', fontsize=12, fontweight='bold')
-plt.legend(['GPS Measurements', 'Strapdown'])
-plt.grid(color='k', linestyle='-', linewidth=0.5)
-plt.show()
+# plt.plot(x,y, '.b', markersize=12)
+# plt.plot(x_strapdown, y_strapdown, '.g')
+# plt.axis('equal')
+# plt.title('GPS vs Strapdown', fontsize=14, fontweight='bold')
+# plt.xlabel('UTM (East) [m]', fontsize=12, fontweight='bold')
+# plt.ylabel('UTM (North) [m]', fontsize=12, fontweight='bold')
+# plt.legend(['GPS Measurements', 'Strapdown'])
+# plt.grid(color='k', linestyle='-', linewidth=0.5)
+# plt.show()
 ####################### V CODE ####################################

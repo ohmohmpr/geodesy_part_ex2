@@ -1,7 +1,10 @@
 import numpy as np
 from functions.geodetic_tools import * 
 
-def strapdown_algorithm(accx, accy, accz, omgx, omgy, omgz, dt, x_initial_value):
+def strapdown_algorithm_3D(accx, accy, accz, omgx, omgy, omgz, dt, x_initial_value):
+    '''
+        Find bugs later
+    '''
     lat, lon, h = x_initial_value
     f_ib_b = vector3(accx, accy, accz) # 3 x 390172
     w_ib_b = vector3(omgx, omgy, omgz) # 3 x 390172
@@ -54,6 +57,9 @@ def strapdown_algorithm(accx, accy, accz, omgx, omgy, omgz, dt, x_initial_value)
 
 
 def strapdown_algorithm_2D(accx, accy, av, dt, x, y):
+    '''
+        Find bugs later
+    '''
 
     acc = vector2(accx, accy) # 2 x 390172
     
@@ -98,14 +104,13 @@ def strapdown_algorithm_2D(accx, accy, av, dt, x, y):
     return p_s, v_s, a_s
 
 
-def strapdown_algorithm_2D_new(yaw, accx, accy, av, dt, x, y):
+def strapdown_algorithm(accx, accy, av, dt, x, y):
     
     yaw_before = -0.81
     v_before_x = 0
     v_before_y = 0
     p_before_x = x[0]
     p_before_y = y[0]
-    nbr = len(av)
     yaw_s = np.full_like(av, [[0]])
     v_s_x = np.full_like(av, [[0]])
     v_s_y = np.full_like(av, [[0]])
@@ -113,6 +118,8 @@ def strapdown_algorithm_2D_new(yaw, accx, accy, av, dt, x, y):
     
     p_s_x = np.full_like(av, [[0]])
     p_s_y = np.full_like(av, [[0]])
+    
+    nbr = len(av)
     for i in range(nbr):
     
         yaw_s[i] = yaw_before + av[i] * dt
@@ -122,7 +129,6 @@ def strapdown_algorithm_2D_new(yaw, accx, accy, av, dt, x, y):
         
         v_s_x[i] = v_before_x + a_pb_x_b * dt
         v_s_y[i] = v_before_y + a_pb_y_b * dt
-        # v_s_m[i] = np.sqrt(v_s_x[i]**2 + v_s_y[i]**2)
 
         p_s_x[i] = p_before_x + v_s_x[i] * dt
         p_s_y[i] = p_before_y + v_s_y[i] * dt
@@ -133,4 +139,4 @@ def strapdown_algorithm_2D_new(yaw, accx, accy, av, dt, x, y):
         p_before_x = p_s_x[i]
         p_before_y = p_s_y[i]
         
-    return yaw_s, v_s_m, p_s_x, p_s_y
+    return p_s_x, p_s_y, yaw_s, v_s_m
