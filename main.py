@@ -94,9 +94,13 @@ if (GPS_multi_simu == True):
 # Statistics
 
 # Measurement noise
-std_gps = 0.05     # GPS [m]
-std_a = 0.05       # Accelerations [m/s^2]
-std_omega = 0.05   # Angular rate [rad/s]
+print("std.a", np.std(a[0:1000]))
+print("std.omega", np.std(omega[0:1000]))
+std_gps = 0.01     # GPS [m] 
+# std_a = 0.05       # Accelerations [m/s^2]
+std_a = np.std(a[0:1000])       # Accelerations [m/s^2]
+# std_omega = 0.05   # Angular rate [rad/s]
+std_omega = np.std(omega[0:1000])   # Angular rate [rad/s]
 
 # System noise
 wk_phi = 0.1        # Angular accelerations [rad/s]
@@ -112,20 +116,20 @@ Sll = np.array([[std_gps**2, 0, 0, 0],
 S_wkwk = np.array([[wk_phi**2, 0],
                   [0, wk_a**2]])
 
-cv_x_gps = 0.05
-cv_y_gps = 0.05
-cv_angle = 0.05
-cv_av = 0.05
-cv_v = 0.05
-cv_acc = 0.05
+std_x_gps = 0.05 # RTK GPS
+std_y_gps = 0.05 # RTK GPS
+std_angle = 0.05 # IMU
+std_av = 0.05    # IMU
+std_v = 0.05     # IMU
+std_acc = 0.05   # IMU
 # Assume
 # Covariance Matrix Initial States
-S_xkxk = np.array([[cv_x_gps**2, 0, 0, 0, 0, 0],
-                  [0, cv_y_gps**2, 0, 0, 0, 0],
-                  [0, 0, cv_angle**2, 0, 0, 0],
-                  [0, 0, 0, cv_av**2, 0, 0],
-                  [0, 0, 0, 0, cv_v**2, 0],
-                  [0, 0, 0, 0, 0, cv_acc**2]])
+S_xkxk = np.array([[std_x_gps**2, 0, 0, 0, 0, 0],
+                  [0, std_y_gps**2, 0, 0, 0, 0],
+                  [0, 0, std_angle**2, 0, 0, 0],
+                  [0, 0, 0, std_av**2, 0, 0],
+                  [0, 0, 0, 0, std_v**2, 0],
+                  [0, 0, 0, 0, 0, std_acc**2]])
 # -----------------------------------------------------
 
 
@@ -145,8 +149,8 @@ L[1:3,idx_imu] = np.vstack(( np.transpose( x[idx_gps] ), np.transpose( y[idx_gps
 # Initial states
 x_k = x[0]
 y_k = y[0]
-angle_k = -0.785398 # angular rate or angular velocity
-omega_k = 0 # omega_k = -0.02838
+angle_k = -0.785398 # yaw
+omega_k = 0 # omega_k = -0.02838 angular rate or angular velocity
 v_k = 0 # 1
 a_k = 0 # a_k = 0.003291
 
@@ -250,8 +254,8 @@ idx_plot = np.arange(start=0, stop=nbr, step=10, dtype=int)
 # -------------------------------------------
 # Trajectory plot
 # Task 3b: Present the best one
-plt.plot(x, y, '.b', markersize=12)
 
+plt.plot(x, y, '.b', markersize=12)
 plt.plot(xstate[idx_plot,1], xstate[idx_plot,2], '.r')
 plt.axis('equal')
 plt.title('GPS Measurement and EKF Trajectory', fontsize=14, fontweight='bold')
@@ -260,6 +264,16 @@ plt.ylabel('UTM (North) [m]', fontsize=12, fontweight='bold')
 plt.legend(['GPS Measurements', 'EKF Trajectory'])
 plt.grid(color='k', linestyle='-', linewidth=0.5)
 plt.show()
+
+# -------------------------------------------
+# Trajectory plot
+# Task 3c: find euclidean distance between two points
+gps_x_gps = L[1,idx_imu]
+gps_y_gps = L[2,idx_imu]
+kf_x_gps = xstate[idx_imu, 1]
+kf_y_gps = xstate[idx_imu, 2]
+d = np.sqrt(np.sum((gps_x_gps - kf_x_gps)**2) + np.sum ((gps_y_gps - kf_y_gps)**2))
+print("d", d)
 
 # -------------------------------------------
 # Acceleration & Angular Velocity
