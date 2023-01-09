@@ -94,13 +94,12 @@ if (GPS_multi_simu == True):
 # Statistics
 
 # Measurement noise
-print("std.a", np.std(a[0:1000]))
-print("std.omega", np.std(omega[0:1000]))
-std_gps = 0.01     # GPS [m] 
-# std_a = 0.05       # Accelerations [m/s^2]
-std_a = np.std(a[0:1000])       # Accelerations [m/s^2]
-# std_omega = 0.05   # Angular rate [rad/s]
-std_omega = np.std(omega[0:1000])   # Angular rate [rad/s]
+
+std_gps = 0.001     # GPS [m] 
+std_a = 0.001       # Accelerations [m/s^2]      std 100000 is bad
+# std_a = np.std(a[0:1000])       # Accelerations [m/s^2]      std 100000 is bad
+std_omega = 0.1   # Angular rate [rad/s]
+# std_omega = np.std(omega[0:1000])   # Angular rate [rad/s]
 
 # System noise
 wk_phi = 0.1        # Angular accelerations [rad/s]
@@ -116,12 +115,12 @@ Sll = np.array([[std_gps**2, 0, 0, 0],
 S_wkwk = np.array([[wk_phi**2, 0],
                   [0, wk_a**2]])
 
-std_x_gps = 0.05 # RTK GPS
-std_y_gps = 0.05 # RTK GPS
-std_angle = 0.05 # IMU
-std_av = 0.05    # IMU
-std_v = 0.05     # IMU
-std_acc = 0.05   # IMU
+std_x_gps = 1 # RTK GPS
+std_y_gps = 1 # RTK GPS
+std_angle =1 # IMU
+std_av = 1    # IMU
+std_v = 1    # IMU
+std_acc = 1   # IMU
 # Assume
 # Covariance Matrix Initial States
 S_xkxk = np.array([[std_x_gps**2, 0, 0, 0, 0, 0],
@@ -149,10 +148,10 @@ L[1:3,idx_imu] = np.vstack(( np.transpose( x[idx_gps] ), np.transpose( y[idx_gps
 # Initial states
 x_k = x[0]
 y_k = y[0]
-angle_k = -0.785398 # yaw
-omega_k = 0 # omega_k = -0.02838 angular rate or angular velocity
-v_k = 0 # 1
-a_k = 0 # a_k = 0.003291
+angle_k = -0.785398 # yaw -0.785398 yaw_init = -0.8964753746986389
+omega_k = 0
+v_k = 0
+a_k = 0 
 
 xk = np.array([x_k, y_k, angle_k, omega_k, v_k, a_k])
 
@@ -198,14 +197,16 @@ for i in range(0, nbr ):
 
     if ( np.isnan( L[1,i]) == True ):
 
-        # Kalman Gain Matrix
-        K = Sx_bar @ H.T @ np.linalg.inv(H @ Sx_bar @ H.T + Sll)
+        h_gps = H[2:4, :]
+        Sll_gps = Sll[2:, 2:]
+        K = Sx_bar @ h_gps.T @ np.linalg.inv(h_gps @ Sx_bar @ h_gps.T + Sll_gps)
 
         # Update state vector
-        x_dach = x_bar + K[:, 2:] @ (L[3:,i] - H[2:4, :] @ x_bar)
+        # x_dach = x_bar + K[:, 2:] @ (L[3:,i] - h_gps @ x_bar)
+        x_dach = x_bar + K @ (L[3:,i] - h_gps @ x_bar)
 
         # Covariance matrix states 
-        Sx_dach = (np.identity(6) - K @ H) @ Sx_bar
+        Sx_dach = (np.identity(6) - K @ h_gps) @ Sx_bar
 
         # save current estimate
         xstate[i,0] = imar_data.imutime[i]
@@ -218,8 +219,7 @@ for i in range(0, nbr ):
     # -------------------------------------------
     # Update (GPS + IMU)
     else:
-
-
+        
         # Kalman Gain Matrix
         K = Sx_bar @ H.T @ np.linalg.inv(H @ Sx_bar @ H.T + Sll)
 
@@ -279,40 +279,40 @@ print("this value should be small as possible. = ", d)
 # -------------------------------------------
 # Acceleration & Angular Velocity
 
-plt.subplot(211)
-plt.plot( imar_data.imutime , a, '.b' )
-plt.plot( xstate[idx_plot,0], xstate[idx_plot,6], '-r' )
-plt.ylabel(" Acceleration [m/s^2] ", fontsize=12, fontweight='bold')
-plt.legend(["Raw IMU Accelerations", "EKF Accelerations "])
-plt.title("IMU Accelerations vs. Filtered Accelerations (EKF) [X-ACC]", fontsize=14, fontweight='bold' )
-plt.grid(color='k', linestyle='-', linewidth=0.5)
+# plt.subplot(211)
+# plt.plot( imar_data.imutime , a, '.b' )
+# plt.plot( xstate[idx_plot,0], xstate[idx_plot,6], '-r' )
+# plt.ylabel(" Acceleration [m/s^2] ", fontsize=12, fontweight='bold')
+# plt.legend(["Raw IMU Accelerations", "EKF Accelerations "])
+# plt.title("IMU Accelerations vs. Filtered Accelerations (EKF) [X-ACC]", fontsize=14, fontweight='bold' )
+# plt.grid(color='k', linestyle='-', linewidth=0.5)
     
-plt.subplot(212)
-plt.plot( imar_data.imutime , geod.rad2deg(omega), '.b' )
-plt.plot( xstate[idx_plot,0], geod.rad2deg(xstate[idx_plot,4]), '-r' )
+# plt.subplot(212)
+# plt.plot( imar_data.imutime , geod.rad2deg(omega), '.b' )
+# plt.plot( xstate[idx_plot,0], geod.rad2deg(xstate[idx_plot,4]), '-r' )
 
-plt.ylabel(" Angular Velocity [deg/s] ", fontsize=12, fontweight='bold')
-plt.xlabel(" seconds of day [s] ", fontsize=12, fontweight='bold')
-plt.legend(["Raw IMU Angular Velocity", "EKF Angular Velocity "])
-plt.title("IMU Accelerations vs. Filtered Accelerations (EKF) [YAW] ", fontsize=14, fontweight='bold' )
-plt.grid(color='k', linestyle='-', linewidth=0.5)
-plt.show()
+# plt.ylabel(" Angular Velocity [deg/s] ", fontsize=12, fontweight='bold')
+# plt.xlabel(" seconds of day [s] ", fontsize=12, fontweight='bold')
+# plt.legend(["Raw IMU Angular Velocity", "EKF Angular Velocity "])
+# plt.title("IMU Accelerations vs. Filtered Accelerations (EKF) [YAW] ", fontsize=14, fontweight='bold' )
+# plt.grid(color='k', linestyle='-', linewidth=0.5)
+# plt.show()
 
 # -------------------------------------------
 # Trajectory plot
 # Task 4a: All trajectories must be compared in 1 figure/plot.
 
-offset_x = 364870
-offset_y = 5621132
-plt.plot(x - offset_x, y - offset_y, 'b', markersize=12)
-plt.plot(xstate[idx_plot,1] - offset_x, xstate[idx_plot,2] - offset_y, 'r')
-plt.plot(x_strapdown - offset_x, y_strapdown - offset_y, 'g')
-plt.axis('equal')
-plt.title('Trajectory Analysis - Local grid', fontsize=14, fontweight='bold')
-plt.xlabel('Easting [m]', fontsize=12, fontweight='bold')
-plt.ylabel('Northing [m]', fontsize=12, fontweight='bold')
-plt.legend(['GPS Measurements', 'EKF Trajectory', 'Strapdown'])
-plt.grid(color='k', linestyle='-', linewidth=0.5)
-plt.show()
+# offset_x = 364870
+# offset_y = 5621132
+# plt.plot(x - offset_x, y - offset_y, 'b', markersize=12)
+# plt.plot(xstate[idx_plot,1] - offset_x, xstate[idx_plot,2] - offset_y, 'r')
+# plt.plot(x_strapdown - offset_x, y_strapdown - offset_y, 'g')
+# plt.axis('equal')
+# plt.title('Trajectory Analysis - Local grid', fontsize=14, fontweight='bold')
+# plt.xlabel('Easting [m]', fontsize=12, fontweight='bold')
+# plt.ylabel('Northing [m]', fontsize=12, fontweight='bold')
+# plt.legend(['GPS Measurements', 'EKF Trajectory', 'Strapdown'])
+# plt.grid(color='k', linestyle='-', linewidth=0.5)
+# plt.show()
 
 # -------------------------------------------
