@@ -39,10 +39,11 @@ omega = imar_data.angularvelocity[:,2]    # angular velocity z [rad/s]
 
 # -----------------------------------------------------
 # Strapdown algorithm
+
 accx = -imar_data.acceleration[:,0]
 accy = -imar_data.acceleration[:,1]
-
-x_strapdown, y_strapdown, _ , _ = strapdown_algorithm(accx, accy, omega, dt, x, y)
+yaw_init = imar_data.rpy_ned[:, 2][0]
+x_strapdown, y_strapdown, _ , _ = strapdown_algorithm(accx, accy, omega, dt, x, y, yaw_init)
 
 # -----------------------------------------------------
 # Time Synchronisation
@@ -145,12 +146,10 @@ L[1:3,idx_imu] = np.vstack(( np.transpose( x[idx_gps] ), np.transpose( y[idx_gps
 x_k = x[0]
 y_k = y[0]
 angle_k = -0.785398 # angular rate or angular velocity
-omega_k = 0
+omega_k = 0 # omega_k = -0.02838
 v_k = 0 # 1
-a_k = 0
-# omega_k = -0.02838
-# v_k = 1
-# a_k = 0.003291
+a_k = 0 # a_k = 0.003291
+
 xk = np.array([x_k, y_k, angle_k, omega_k, v_k, a_k])
 
 # -----------------------------------------------------
@@ -250,47 +249,44 @@ idx_plot = np.arange(start=0, stop=nbr, step=10, dtype=int)
 
 # -------------------------------------------
 # Trajectory plot
-# plt.plot(x, y, '.b', markersize=12)
-# plt.plot(xstate[idx_plot,1], xstate[idx_plot,2], '.r')
-# plt.plot(x_strapdown, y_strapdown, '.g')
-# plt.axis('equal')
-# plt.title('GPS Measurements, EKF and Strapdown Trajectory', fontsize=14, fontweight='bold')
-# plt.xlabel('UTM (East) [m]', fontsize=12, fontweight='bold')
-# plt.ylabel('UTM (North) [m]', fontsize=12, fontweight='bold')
-# plt.legend(['GPS Measurements', 'EKF Trajectory', 'Strapdown'])
-# plt.grid(color='k', linestyle='-', linewidth=0.5)
-# plt.show()
+# Task 3b: Present the best one
+plt.plot(x, y, '.b', markersize=12)
+
+plt.plot(xstate[idx_plot,1], xstate[idx_plot,2], '.r')
+plt.axis('equal')
+plt.title('GPS Measurement and EKF Trajectory', fontsize=14, fontweight='bold')
+plt.xlabel('UTM (East) [m]', fontsize=12, fontweight='bold')
+plt.ylabel('UTM (North) [m]', fontsize=12, fontweight='bold')
+plt.legend(['GPS Measurements', 'EKF Trajectory'])
+plt.grid(color='k', linestyle='-', linewidth=0.5)
+plt.show()
 
 # -------------------------------------------
 # Acceleration & Angular Velocity
 
-# plt.subplot(211)
-# plt.plot( imar_data.imutime , a, '.b' )
-# plt.plot( xstate[idx_plot,0], xstate[idx_plot,6], '-r' )
-# plt.ylabel(" Acceleration [m/s^2] ", fontsize=12, fontweight='bold')
-# plt.legend(["Raw IMU Accelerations", "EKF Accelerations "])
-# plt.title("IMU Accelerations vs. Filtered Accelerations (EKF) [X-ACC]", fontsize=14, fontweight='bold' )
-# plt.grid(color='k', linestyle='-', linewidth=0.5)
+plt.subplot(211)
+plt.plot( imar_data.imutime , a, '.b' )
+plt.plot( xstate[idx_plot,0], xstate[idx_plot,6], '-r' )
+plt.ylabel(" Acceleration [m/s^2] ", fontsize=12, fontweight='bold')
+plt.legend(["Raw IMU Accelerations", "EKF Accelerations "])
+plt.title("IMU Accelerations vs. Filtered Accelerations (EKF) [X-ACC]", fontsize=14, fontweight='bold' )
+plt.grid(color='k', linestyle='-', linewidth=0.5)
     
-# plt.subplot(212)
-# plt.plot( imar_data.imutime , geod.rad2deg(omega), '.b' )
-# plt.plot( xstate[idx_plot,0], geod.rad2deg(xstate[idx_plot,4]), '-r' )
+plt.subplot(212)
+plt.plot( imar_data.imutime , geod.rad2deg(omega), '.b' )
+plt.plot( xstate[idx_plot,0], geod.rad2deg(xstate[idx_plot,4]), '-r' )
 
-# plt.ylabel(" Angular Velocity [deg/s] ", fontsize=12, fontweight='bold')
-# plt.xlabel(" seconds of day [s] ", fontsize=12, fontweight='bold')
-# plt.legend(["Raw IMU Angular Velocity", "EKF Angular Velocity "])
-# plt.title("IMU Accelerations vs. Filtered Accelerations (EKF) [YAW] ", fontsize=14, fontweight='bold' )
-# plt.grid(color='k', linestyle='-', linewidth=0.5)
-# plt.show()
-
-# -------------------------------------------
-
-# plt.show()
-
-
+plt.ylabel(" Angular Velocity [deg/s] ", fontsize=12, fontweight='bold')
+plt.xlabel(" seconds of day [s] ", fontsize=12, fontweight='bold')
+plt.legend(["Raw IMU Angular Velocity", "EKF Angular Velocity "])
+plt.title("IMU Accelerations vs. Filtered Accelerations (EKF) [YAW] ", fontsize=14, fontweight='bold' )
+plt.grid(color='k', linestyle='-', linewidth=0.5)
+plt.show()
 
 # -------------------------------------------
 # Trajectory plot
+# Task 4a: All trajectories must be compared in 1 figure/plot.
+
 offset_x = 364870
 offset_y = 5621132
 plt.plot(x - offset_x, y - offset_y, 'b', markersize=12)
@@ -304,68 +300,4 @@ plt.legend(['GPS Measurements', 'EKF Trajectory', 'Strapdown'])
 plt.grid(color='k', linestyle='-', linewidth=0.5)
 plt.show()
 
-
-
-
-
-
-
-
-
-
-
-
-######################## YAW CODE ####################################
-# yaw_kf = xstate[:, 3]
-# av_kf = xstate[:, 4]
-# a_kf = xstate[:, 6]
-# yaw_rpy_ned = imar_data_sd.rpy_ned[:,2]
-# omega = imar_data.angularvelocity[:,2]
-
-# yaw_strapdown = strapdown_algorithm_2D_new(yaw_rpy_ned, a_kf, omega, dt, x, y)
-# time_test = imar_data_sd.imutime
-
-# plt.scatter(time_test, yaw_kf)
-# plt.scatter(time_test, yaw_strapdown)
-# plt.scatter(time_test, yaw_rpy_ned)
-# plt.legend(["yaw_kf", "yaw_strapdown", "yaw_rpy_ned"])
-# plt.title("yaw_kf vs yaw_strapdown[av correctted y start = -0.81] vs yaw_rpy_ned", fontsize=14, fontweight='bold' )
-# plt.show()
-######################## YAW CODE ####################################
-
-# ####################### V CODE ####################################
-# v_kf = xstate[:, 5]
-# a_kf = xstate[:, 6]
-# yaw_rpy_ned = imar_data_sd.rpy_ned[:,2]
-# accx = -imar_data.acceleration[:,0]
-# accy = -imar_data.acceleration[:,1]
-# omega = imar_data.angularvelocity[:,2]
-
-# yaw_strapdown, vs_strapdown_m = strapdown_algorithm_2D_new(yaw_rpy_ned, accx, accy, omega, dt, x, y)
-# time_test = imar_data_sd.imutime
-
-# plt.scatter(time_test, vs_strapdown_m)
-# plt.scatter(time_test, v_kf)
-# plt.legend(["vs_strapdown_m[-accx, -accy]", "v_kf"])
-# plt.title("vs_strapdown_m[-accx, -accy] vs v_kf", fontsize=14, fontweight='bold' )
-# plt.show()
-# ####################### V CODE ####################################
-
-####################### V CODE ####################################
-# accx = -imar_data.acceleration[:,0]
-# accy = -imar_data.acceleration[:,1]
-# omega = imar_data.angularvelocity[:,2]
-
-# x_strapdown, y_strapdown, _ , _ = strapdown_algorithm(accx, accy, omega, dt, x, y)
-# time_test = imar_data.imutime
-
-# plt.plot(x,y, '.b', markersize=12)
-# plt.plot(x_strapdown, y_strapdown, '.g')
-# plt.axis('equal')
-# plt.title('GPS vs Strapdown', fontsize=14, fontweight='bold')
-# plt.xlabel('UTM (East) [m]', fontsize=12, fontweight='bold')
-# plt.ylabel('UTM (North) [m]', fontsize=12, fontweight='bold')
-# plt.legend(['GPS Measurements', 'Strapdown'])
-# plt.grid(color='k', linestyle='-', linewidth=0.5)
-# plt.show()
-####################### V CODE ####################################
+# -------------------------------------------
