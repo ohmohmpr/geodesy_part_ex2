@@ -268,12 +268,13 @@ plt.show()
 # -------------------------------------------
 # Trajectory plot
 # Task 3c: find euclidean distance between two points
+
 gps_x_gps = L[1,idx_imu]
 gps_y_gps = L[2,idx_imu]
 kf_x_gps = xstate[idx_imu, 1]
 kf_y_gps = xstate[idx_imu, 2]
 d = np.sqrt(np.sum((gps_x_gps - kf_x_gps)**2) + np.sum ((gps_y_gps - kf_y_gps)**2))
-print("d", d)
+print("this value should be small as possible. = ", d)
 
 # -------------------------------------------
 # Acceleration & Angular Velocity
