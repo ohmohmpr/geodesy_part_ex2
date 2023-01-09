@@ -95,15 +95,13 @@ if (GPS_multi_simu == True):
 
 # Measurement noise
 
-std_gps = 0.001     # GPS [m] 
-std_a = 0.001       # Accelerations [m/s^2]      std 100000 is bad
-# std_a = np.std(a[0:1000])       # Accelerations [m/s^2]      std 100000 is bad
-std_omega = 0.1   # Angular rate [rad/s]
-# std_omega = np.std(omega[0:1000])   # Angular rate [rad/s]
+std_gps = 0.01     # GPS [m]                               default = 0.01
+std_a = np.std(a[0:1000])       # Accelerations [m/s^2]    default = np.std(a[0:1000])
+std_omega = np.std(a[0:1000])   # Angular rate [rad/s] default = np.std(omega[0:1000])
 
 # System noise
-wk_phi = 0.1        # Angular accelerations [rad/s]
-wk_a = 1.5          # Linear jerk [m/s^3]
+wk_phi = 0.1       # Angular accelerations [rad/s] default = 0.1  overestimate 10000
+wk_a = 1.5         # Linear jerk [m/s^3]          default = 1.5  overestimate 10000
 
 # Covariance Matrix Measurements
 Sll = np.array([[std_gps**2, 0, 0, 0],
@@ -115,12 +113,12 @@ Sll = np.array([[std_gps**2, 0, 0, 0],
 S_wkwk = np.array([[wk_phi**2, 0],
                   [0, wk_a**2]])
 
-std_x_gps = 1 # RTK GPS
-std_y_gps = 1 # RTK GPS
-std_angle =1 # IMU
-std_av = 1    # IMU
-std_v = 1    # IMU
-std_acc = 1   # IMU
+std_x_gps = std_gps # RTK GPS
+std_y_gps = std_gps # RTK GPS
+std_angle = 0.05 # IMU
+std_av = std_omega    # IMU
+std_v = 0.05     # IMU
+std_acc = std_a   # IMU
 # Assume
 # Covariance Matrix Initial States
 S_xkxk = np.array([[std_x_gps**2, 0, 0, 0, 0, 0],
@@ -148,7 +146,7 @@ L[1:3,idx_imu] = np.vstack(( np.transpose( x[idx_gps] ), np.transpose( y[idx_gps
 # Initial states
 x_k = x[0]
 y_k = y[0]
-angle_k = -0.785398 # yaw -0.785398 yaw_init = -0.8964753746986389
+angle_k = 0 # yaw -0.785398 yaw_init = -0.8964753746986389
 omega_k = 0
 v_k = 0
 a_k = 0 
@@ -202,7 +200,6 @@ for i in range(0, nbr ):
         K = Sx_bar @ h_gps.T @ np.linalg.inv(h_gps @ Sx_bar @ h_gps.T + Sll_gps)
 
         # Update state vector
-        # x_dach = x_bar + K[:, 2:] @ (L[3:,i] - h_gps @ x_bar)
         x_dach = x_bar + K @ (L[3:,i] - h_gps @ x_bar)
 
         # Covariance matrix states 
@@ -253,17 +250,109 @@ idx_plot = np.arange(start=0, stop=nbr, step=10, dtype=int)
 
 # -------------------------------------------
 # Trajectory plot
-# Task 3b: Present the best one
 
-plt.plot(x, y, '.b', markersize=12)
-plt.plot(xstate[idx_plot,1], xstate[idx_plot,2], '.r')
-plt.axis('equal')
-plt.title('GPS Measurement and EKF Trajectory', fontsize=14, fontweight='bold')
-plt.xlabel('UTM (East) [m]', fontsize=12, fontweight='bold')
-plt.ylabel('UTM (North) [m]', fontsize=12, fontweight='bold')
-plt.legend(['GPS Measurements', 'EKF Trajectory'])
-plt.grid(color='k', linestyle='-', linewidth=0.5)
-plt.show()
+# Task 3a: Trajectory - Overestimate Measurement noise
+# offset_x = 364870
+# offset_y = 5621132
+# plt.plot(x - offset_x, y - offset_y, '.b', markersize=12)
+# plt.plot(xstate[idx_plot,1] - offset_x, xstate[idx_plot,2] - offset_y, '.r')
+# plt.axis('equal')
+# plt.title('Overestimate Measurement noise, std = 1', fontsize=14, fontweight='bold')
+# plt.xlabel('Easting [m]', fontsize=12, fontweight='bold')
+# plt.ylabel('Northing [m]', fontsize=12, fontweight='bold')
+# plt.legend(['GPS Measurements', 'EKF Trajectory'])
+# plt.grid(color='k', linestyle='-', linewidth=0.5)
+# plt.savefig("Trajectory - Overestimate Measurement noise = 1.png")
+# plt.show()
+
+# -------------------------------------------
+# Trajectory plot
+
+# Task 3a: Trajectory - Underestimate Measurement noise
+# 7.431367435240396
+# offset_x = 364870
+# offset_y = 5621132
+# plt.plot(x - offset_x, y - offset_y, '.b', markersize=12)
+# plt.plot(xstate[idx_plot,1] - offset_x, xstate[idx_plot,2] - offset_y, '.r')
+# plt.axis('equal')
+# plt.title('Underestimate Measurement noise, std = 0.0000001', fontsize=14, fontweight='bold')
+# plt.xlabel('Easting [m]', fontsize=12, fontweight='bold')
+# plt.ylabel('Northing [m]', fontsize=12, fontweight='bold')
+# plt.legend(['GPS Measurements', 'EKF Trajectory'])
+# plt.grid(color='k', linestyle='-', linewidth=0.5)
+# plt.savefig("Trajectory - Underestimate Measurement noise = 0.0000001.png")
+# plt.show()
+
+# -------------------------------------------
+# Trajectory plot
+
+# Task 3a: Trajectory - Overestimate System noise
+# 5.011167772367105
+# offset_x = 364870
+# offset_y = 5621132
+# plt.plot(x - offset_x, y - offset_y, '.b', markersize=12)
+# plt.plot(xstate[idx_plot,1] - offset_x, xstate[idx_plot,2] - offset_y, '.r')
+# plt.axis('equal')
+# plt.title('Overestimate System noise, std = 1000000', fontsize=14, fontweight='bold')
+# plt.xlabel('Easting [m]', fontsize=12, fontweight='bold')
+# plt.ylabel('Northing [m]', fontsize=12, fontweight='bold')
+# plt.legend(['GPS Systems', 'EKF Trajectory'])
+# plt.grid(color='k', linestyle='-', linewidth=0.5)
+# plt.savefig("Trajectory - Overestimate System noise = 1000000.png")
+# plt.show()
+
+# -------------------------------------------
+# Trajectory plot
+
+# Task 3a: Trajectory - Underestimate System noise
+# 644.4679547066012
+# offset_x = 364870
+# offset_y = 5621132
+# plt.plot(x - offset_x, y - offset_y, '.b', markersize=12)
+# plt.plot(xstate[idx_plot,1] - offset_x, xstate[idx_plot,2] - offset_y, '.r')
+# plt.axis('equal')
+# plt.title('Underestimate System noise, std = 0.0000001', fontsize=14, fontweight='bold')
+# plt.xlabel('Easting [m]', fontsize=12, fontweight='bold')
+# plt.ylabel('Northing [m]', fontsize=12, fontweight='bold')
+# plt.legend(['GPS Systems', 'EKF Trajectory'])
+# plt.grid(color='k', linestyle='-', linewidth=0.5)
+# plt.savefig("Trajectory - Underestimate System noise = 0.0000001.png")
+# plt.show()
+
+# -------------------------------------------
+# Trajectory plot
+
+# Task 3a: Initial value = 0 std =10000
+# offset_x = 364870
+# offset_y = 5621132
+# plt.plot(x - offset_x, y - offset_y, '.b', markersize=12)
+# plt.plot(xstate[idx_plot,1] - offset_x, xstate[idx_plot,2] - offset_y, '.r')
+# plt.axis('equal')
+# plt.title('Trajectory - Initial value = 0, STD = 10000', fontsize=14, fontweight='bold')
+# plt.xlabel('Easting [m]', fontsize=12, fontweight='bold')
+# plt.ylabel('Northing [m]', fontsize=12, fontweight='bold')
+# plt.legend(['GPS Measurements', 'EKF Trajectory'])
+# plt.grid(color='k', linestyle='-', linewidth=0.5)
+# plt.savefig("Trajectory - Initial value = 0, STD = 10000.png")
+# plt.show()
+
+# -------------------------------------------
+# Trajectory plot
+# Task 3b: Present the best one
+# 5.001781388514242
+
+# offset_x = 364870
+# offset_y = 5621132
+# plt.plot(x - offset_x, y - offset_y, '.b', markersize=12)
+# plt.plot(xstate[idx_plot,1] - offset_x, xstate[idx_plot,2] - offset_y, '.r')
+# plt.axis('equal')
+# plt.title('GPS Measurement and EKF Trajectory', fontsize=14, fontweight='bold')
+# plt.xlabel('UTM (East) [m]', fontsize=12, fontweight='bold')
+# plt.ylabel('UTM (North) [m]', fontsize=12, fontweight='bold')
+# plt.legend(['GPS Measurements', 'EKF Trajectory'])
+# plt.grid(color='k', linestyle='-', linewidth=0.5)
+# plt.savefig("GPS Measurement and EKF Trajectory")
+# plt.show()
 
 # -------------------------------------------
 # Trajectory plot
@@ -274,7 +363,7 @@ gps_y_gps = L[2,idx_imu]
 kf_x_gps = xstate[idx_imu, 1]
 kf_y_gps = xstate[idx_imu, 2]
 d = np.sqrt(np.sum((gps_x_gps - kf_x_gps)**2) + np.sum ((gps_y_gps - kf_y_gps)**2))
-print("this value should be small as possible. = ", d)
+print("Different between trajectories = ", d)
 
 # -------------------------------------------
 # Acceleration & Angular Velocity
@@ -313,6 +402,7 @@ print("this value should be small as possible. = ", d)
 # plt.ylabel('Northing [m]', fontsize=12, fontweight='bold')
 # plt.legend(['GPS Measurements', 'EKF Trajectory', 'Strapdown'])
 # plt.grid(color='k', linestyle='-', linewidth=0.5)
+# plt.savefig("GPS Measurement, EKF Trajectory and Strapdown")
 # plt.show()
 
 # -------------------------------------------
