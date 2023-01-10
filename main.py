@@ -43,7 +43,7 @@ omega = imar_data.angularvelocity[:,2]    # angular velocity z [rad/s]
 accx = -imar_data.acceleration[:,0]
 accy = -imar_data.acceleration[:,1]
 yaw_init = imar_data.rpy_ned[:, 2][0]
-x_strapdown, y_strapdown, _ , _ = strapdown_algorithm(accx, accy, omega, dt, x, y, yaw_init)
+x_strapdown, y_strapdown, yaw_s, v_s_m = strapdown_algorithm(accx, accy, omega, dt, x, y, yaw_init)
 
 # -----------------------------------------------------
 # Time Synchronisation
@@ -178,61 +178,61 @@ print('filter started ... ')
 # -------------------------------------------
 # MAIN KF Loop
 
-for i in range(0, nbr ):
-    # -------------------------------------------
-    # percent update 
-    if (i / nbr) > percent:
-        print('%1.0f' % (percent * 100), '% / 100%' )
-        percent += 0.05
+# for i in range(0, nbr ):
+#     # -------------------------------------------
+#     # percent update 
+#     if (i / nbr) > percent:
+#         print('%1.0f' % (percent * 100), '% / 100%' )
+#         percent += 0.05
 
-    # -------------------------------------------
-    # Prediction Step
-    x_bar, Sx_bar = prediction( xk, S_xkxk, S_wkwk, dt, i )
-    xstate[i,0] = imar_data.imutime[i]
-    xstate[i,1:7] = x_bar
-    # -------------------------------------------
-    # Update Step (IMU only)
+#     # -------------------------------------------
+#     # Prediction Step
+#     x_bar, Sx_bar = prediction( xk, S_xkxk, S_wkwk, dt, i )
+#     xstate[i,0] = imar_data.imutime[i]
+#     xstate[i,1:7] = x_bar
+#     # -------------------------------------------
+#     # Update Step (IMU only)
 
-    if ( np.isnan( L[1,i]) == True ):
+#     if ( np.isnan( L[1,i]) == True ):
 
-        h_gps = H[2:4, :]
-        Sll_gps = Sll[2:, 2:]
-        K = Sx_bar @ h_gps.T @ np.linalg.inv(h_gps @ Sx_bar @ h_gps.T + Sll_gps)
+#         h_gps = H[2:4, :]
+#         Sll_gps = Sll[2:, 2:]
+#         K = Sx_bar @ h_gps.T @ np.linalg.inv(h_gps @ Sx_bar @ h_gps.T + Sll_gps)
 
-        # Update state vector
-        x_dach = x_bar + K @ (L[3:,i] - h_gps @ x_bar)
+#         # Update state vector
+#         x_dach = x_bar + K @ (L[3:,i] - h_gps @ x_bar)
 
-        # Covariance matrix states 
-        Sx_dach = (np.identity(6) - K @ h_gps) @ Sx_bar
+#         # Covariance matrix states 
+#         Sx_dach = (np.identity(6) - K @ h_gps) @ Sx_bar
 
-        # save current estimate
-        xstate[i,0] = imar_data.imutime[i]
-        xstate[i,1:7] = x_dach
+#         # save current estimate
+#         xstate[i,0] = imar_data.imutime[i]
+#         xstate[i,1:7] = x_dach
         
-        # update states for next iteration
-        xk = x_dach
-        S_xkxk = Sx_dach
+#         # update states for next iteration
+#         xk = x_dach
+#         S_xkxk = Sx_dach
     
-    # -------------------------------------------
-    # Update (GPS + IMU)
-    else:
+#     # -------------------------------------------
+#     # Update (GPS + IMU)
+#     else:
         
-        # Kalman Gain Matrix
-        K = Sx_bar @ H.T @ np.linalg.inv(H @ Sx_bar @ H.T + Sll)
+#         # Kalman Gain Matrix
+#         K = Sx_bar @ H.T @ np.linalg.inv(H @ Sx_bar @ H.T + Sll)
 
-        # Update state vector
-        x_dach = x_bar + K @ (L[1:,i] - H @ x_bar)
+#         # Update state vector
+#         x_dach = x_bar + K @ (L[1:,i] - H @ x_bar)
 
-        # Covariance matrix states 
-        Sx_dach = (np.identity(6) - K @ H) @ Sx_bar
+#         # Covariance matrix states 
+#         Sx_dach = (np.identity(6) - K @ H) @ Sx_bar
 
-        # save estimation
-        xstate[i,0] = imar_data.imutime[i]
-        xstate[i,1:7] = x_dach
+#         # save estimation
+#         xstate[i,0] = imar_data.imutime[i]
+#         xstate[i,1:7] = x_dach
 
-        # update states for next iteration
-        xk = x_dach
-        S_xkxk = Sx_dach
+#         # update states for next iteration
+#         xk = x_dach
+#         S_xkxk = Sx_dach
 
 # end MAIN loop
 # -------------------------------------------
@@ -358,12 +358,12 @@ idx_plot = np.arange(start=0, stop=nbr, step=10, dtype=int)
 # Trajectory plot
 # Task 3c: find euclidean distance between two points
 
-gps_x_gps = L[1,idx_imu]
-gps_y_gps = L[2,idx_imu]
-kf_x_gps = xstate[idx_imu, 1]
-kf_y_gps = xstate[idx_imu, 2]
-d = np.sqrt(np.sum((gps_x_gps - kf_x_gps)**2) + np.sum ((gps_y_gps - kf_y_gps)**2))
-print("Different between trajectories = ", d)
+# gps_x_gps = L[1,idx_imu]
+# gps_y_gps = L[2,idx_imu]
+# kf_x_gps = xstate[idx_imu, 1]
+# kf_y_gps = xstate[idx_imu, 2]
+# d = np.sqrt(np.sum((gps_x_gps - kf_x_gps)**2) + np.sum ((gps_y_gps - kf_y_gps)**2))
+# print("Different between trajectories = ", d)
 
 # -------------------------------------------
 # Acceleration & Angular Velocity
@@ -403,6 +403,156 @@ print("Different between trajectories = ", d)
 # plt.legend(['GPS Measurements', 'EKF Trajectory', 'Strapdown'])
 # plt.grid(color='k', linestyle='-', linewidth=0.5)
 # plt.savefig("GPS Measurement, EKF Trajectory and Strapdown")
+# plt.show()
+
+# -------------------------------------------
+# Trajectory plot
+# Task 4b: find maximum difference between two trajectory
+
+# gps_x_gps = L[1,idx_imu]
+# gps_y_gps = L[2,idx_imu]
+# kf_x_gps = xstate[idx_imu, 1]
+# kf_y_gps = xstate[idx_imu, 2]
+# print(kf_x_gps[1008])
+# d = np.argmax((gps_x_gps - kf_x_gps)**2 + (gps_y_gps - kf_y_gps)**2)
+# print("Find maximum difference = ", d)
+
+# offset_x = 364870
+# offset_y = 5621132
+# plt.plot(x - offset_x, y - offset_y, '.b', markersize=12)
+# plt.plot(xstate[idx_plot,1] - offset_x, xstate[idx_plot,2] - offset_y, '.r')
+# plt.plot(gps_x_gps[1008] - offset_x, gps_y_gps[1008] - offset_y, '.r')
+# plt.plot(kf_x_gps[1008] - offset_x, kf_y_gps[1008] - offset_y, '.b')
+# plt.axis('equal')
+# plt.title('Find maximum difference - Local grid', fontsize=14, fontweight='bold')
+# plt.xlabel('Easting [m]', fontsize=12, fontweight='bold')
+# plt.ylabel('Northing [m]', fontsize=12, fontweight='bold')
+# plt.legend(['GPS Measurements', 'EKF Trajectory'])
+# plt.grid(color='k', linestyle='-', linewidth=0.5)
+# plt.savefig("Find maximum difference")
+# plt.show()
+
+
+# -------------------------------------------
+# Trajectory plot
+# Task 4b: find maximum difference between two trajectory
+# GPS vs strapdown
+
+# gps_x_gps = L[1,idx_imu]
+# gps_y_gps = L[2,idx_imu]
+# strap_x = x_strapdown[idx_imu]
+# strap_y = y_strapdown[idx_imu]
+
+# d = np.argmax((gps_x_gps - strap_x)**2 + (gps_y_gps - strap_y)**2)
+# distance = np.max(np.sqrt((gps_x_gps - strap_x)**2 + (gps_y_gps - strap_y)**2))
+# print("Find idx maximum difference = ", d)
+# print("Find maximum difference = ", distance)
+# diff = np.sqrt(np.sum((gps_x_gps - strap_x)**2) + np.sum ((gps_y_gps - strap_y)**2))
+# print("Different between trajectories = ", diff)
+
+# offset_x = 364870
+# offset_y = 5621132
+# plt.plot(x - offset_x, y - offset_y, '.b')
+# plt.plot(strap_x - offset_x, strap_y - offset_y, '.r')
+# plt.plot([gps_x_gps[d] - offset_x, strap_x[d] - offset_x], [gps_y_gps[d] - offset_y, strap_y[d] - offset_y], '-ok', mfc='C1', mec='C1')
+# annotate_x = (gps_x_gps[d] + strap_x[d]) / 2 - offset_x
+# annotate_y = (gps_y_gps[d] + strap_y[d]) / 2 - offset_y
+# plt.annotate("difference = 9.540 [m]",
+#                   xy=(annotate_x , annotate_y), xycoords='data',
+#                   xytext=(annotate_x + 8, annotate_y + 8), textcoords='data',
+#                   size=10, va="center", ha="center",
+#                   arrowprops=dict(arrowstyle="-|>",
+#                                   connectionstyle="arc3,rad=-0.2",
+#                                   fc="w"),
+#                   )
+# plt.axis('equal')
+# plt.title('Maximum difference - GPS vs Strapdown', fontsize=14, fontweight='bold')
+# plt.xlabel('Easting [m]', fontsize=12, fontweight='bold')
+# plt.ylabel('Northing [m]', fontsize=12, fontweight='bold')
+# plt.legend(['GPS Measurements', 'Strapdown'])
+# plt.grid(color='k', linestyle='-', linewidth=0.5)
+# plt.savefig("Find maximum difference - GPS vs Strapdown")
+# plt.show()
+
+
+# -------------------------------------------
+# Trajectory plot
+# Task 4b: find maximum difference between two trajectory
+# GPS vs EKF
+
+# gps_x_gps = L[1,idx_imu]
+# gps_y_gps = L[2,idx_imu]
+# kf_x_gps = xstate[idx_imu, 1]
+# kf_y_gps = xstate[idx_imu, 2]
+
+# d = np.argmax((gps_x_gps - kf_x_gps)**2 + (gps_y_gps - kf_y_gps)**2)
+# distance = np.max(np.sqrt((gps_x_gps - kf_x_gps)**2 + (gps_y_gps - kf_y_gps)**2))
+# print("Find idx maximum difference = ", d)
+# print("Find maximum difference = ", distance)
+# diff = np.sqrt(np.sum((gps_x_gps - kf_x_gps)**2) + np.sum ((gps_y_gps - kf_y_gps)**2))
+# print("Different between trajectories = ", diff)
+
+# offset_x = 364870
+# offset_y = 5621132
+# plt.plot(x - offset_x, y - offset_y, '.b')
+# plt.plot(kf_x_gps - offset_x, kf_y_gps - offset_y, '.r')
+# plt.plot([gps_x_gps[d] - offset_x, kf_x_gps[d] - offset_x], [gps_y_gps[d] - offset_y, kf_y_gps[d] - offset_y], '-ok', mfc='C1', mec='C1')
+# annotate_x = (gps_x_gps[d] + kf_x_gps[d]) / 2 - offset_x
+# annotate_y = (gps_y_gps[d] + kf_y_gps[d]) / 2 - offset_y
+# plt.annotate("difference = 0.435 [m]",
+#                   xy=(annotate_x , annotate_y), xycoords='data',
+#                   xytext=(annotate_x + 0.5, annotate_y + 0.5), textcoords='data',
+#                   size=10, va="center", ha="center",
+#                   arrowprops=dict(arrowstyle="-|>",
+#                                   connectionstyle="arc3,rad=0.2",
+#                                   fc="w"),
+#                   )
+# plt.axis('equal')
+# plt.title('Maximum difference - GPS vs EKF', fontsize=14, fontweight='bold')
+# plt.xlabel('Easting [m]', fontsize=12, fontweight='bold')
+# plt.ylabel('Northing [m]', fontsize=12, fontweight='bold')
+# plt.legend(['GPS Measurements', 'EKF'])
+# plt.grid(color='k', linestyle='-', linewidth=0.5)
+# plt.savefig("Find maximum difference - GPS vs EKF")
+# plt.show()
+
+# -------------------------------------------
+# Trajectory plot
+# Task 4c: Difference in position over time
+# GPS vs strapdown vs EKF
+
+# gps_time = L[0,idx_imu]
+# gps_x_gps = L[1,idx_imu]
+# gps_y_gps = L[2,idx_imu]
+
+# total_time = gps_time[-1] - gps_time[0]
+# print(total_time)
+# strap_x = x_strapdown[idx_imu]
+# strap_y = y_strapdown[idx_imu]
+
+# kf_x_gps = xstate[idx_imu, 1]
+# kf_y_gps = xstate[idx_imu, 2]
+
+# diff_gps_and_strap = np.sqrt((gps_x_gps - strap_x)**2 + (gps_y_gps - strap_y)**2)
+# diff_gps_and_kf = np.sqrt((gps_x_gps - kf_x_gps)**2 + (gps_y_gps - kf_y_gps)**2)
+
+# diff_gps_and_strap_total = np.sqrt(np.sum(((gps_x_gps - strap_x)**2) + (gps_y_gps - strap_y)**2))
+# diff_gps_and_kf_total = np.sqrt(np.sum(((gps_x_gps - kf_x_gps)**2) + (gps_y_gps - kf_y_gps)**2))
+
+# print("sum time gps and strap", np.sum(diff_gps_and_strap_total)) # 322.48051196216613 [m]
+# print("sum time gps and EKF", np.sum(diff_gps_and_kf_total)) #  5.001781388514242 [m]
+
+# print("average difference per time gps and strap [cm/s]", np.sum(diff_gps_and_strap_total)/total_time * 10e-2)
+# print("average difference per time gps and EKF [cm/s]", np.sum(diff_gps_and_kf_total)/total_time * 10e-2)
+
+# plt.plot(gps_time, diff_gps_and_strap, '.b')
+# plt.plot(gps_time, diff_gps_and_kf, '.r')
+# plt.title('Difference in position over time', fontsize=14, fontweight='bold')
+# plt.xlabel('seconds of day [s] ', fontsize=12, fontweight='bold')
+# plt.ylabel('Difference [m]', fontsize=12, fontweight='bold')
+
+# plt.legend(['GPS vs Strapdown', 'GPS vs EKF'])
+# plt.savefig("Difference in position over time")
 # plt.show()
 
 # -------------------------------------------
