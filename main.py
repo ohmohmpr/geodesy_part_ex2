@@ -95,10 +95,22 @@ if (GPS_multi_simu == True):
 
 # Measurement noise
 
-std_gps = 0.01     # GPS [m]                               default = 0.01
-std_a = np.std(a[0:1000])       # Accelerations [m/s^2]    default = np.std(a[0:1000])
-std_omega = np.std(a[0:1000])   # Angular rate [rad/s] default = np.std(omega[0:1000])
+std_gps = 0.01     # GPS [m]                               default = 0.05 18.668
+std_a = np.std(a[0:100000])      # Accelerations [m/s^2]    default = np.std(a[0:1000])
+std_omega = 0.25   # Angular rate [rad/s] default = np.std(omega[0:1000])
+# print(std_a)       
+# print(std_omega) 
 
+# 1 10000 0.011497345961894776  0.0007721008383805309 7.6758095263681
+# 2 100000 0.14706149234759655  0.17653376045083508 4.014702719624097
+# 4 sample2 0.14706149234759655 0.2 3.8893015069379486
+
+# 6 sample3 0.14706149234759655 0.25 3.5060247557832924
+
+# 7 sample4 0.14706149234759655 0.26  3.5343471900378876
+# 5 sample1 0.14706149234759655 0.3 4.89484
+# 8 sample1 0.14706149234759655 0.4 4.9448412809914615
+# 3 all 0.1865740396835424  0.1241192696654598 4.203532436537764
 # System noise
 wk_phi = 0.1       # Angular accelerations [rad/s] default = 0.1  overestimate 10000
 wk_a = 1.5         # Linear jerk [m/s^3]          default = 1.5  overestimate 10000
@@ -178,61 +190,61 @@ print('filter started ... ')
 # -------------------------------------------
 # MAIN KF Loop
 
-# for i in range(0, nbr ):
-#     # -------------------------------------------
-#     # percent update 
-#     if (i / nbr) > percent:
-#         print('%1.0f' % (percent * 100), '% / 100%' )
-#         percent += 0.05
+for i in range(0, nbr ):
+    # -------------------------------------------
+    # percent update 
+    if (i / nbr) > percent:
+        print('%1.0f' % (percent * 100), '% / 100%' )
+        percent += 0.05
 
-#     # -------------------------------------------
-#     # Prediction Step
-#     x_bar, Sx_bar = prediction( xk, S_xkxk, S_wkwk, dt, i )
-#     xstate[i,0] = imar_data.imutime[i]
-#     xstate[i,1:7] = x_bar
-#     # -------------------------------------------
-#     # Update Step (IMU only)
+    # -------------------------------------------
+    # Prediction Step
+    x_bar, Sx_bar = prediction( xk, S_xkxk, S_wkwk, dt, i )
+    xstate[i,0] = imar_data.imutime[i]
+    xstate[i,1:7] = x_bar
+    # -------------------------------------------
+    # Update Step (IMU only)
 
-#     if ( np.isnan( L[1,i]) == True ):
+    if ( np.isnan( L[1,i]) == True ):
 
-#         h_gps = H[2:4, :]
-#         Sll_gps = Sll[2:, 2:]
-#         K = Sx_bar @ h_gps.T @ np.linalg.inv(h_gps @ Sx_bar @ h_gps.T + Sll_gps)
+        h_gps = H[2:4, :]
+        Sll_gps = Sll[2:, 2:]
+        K = Sx_bar @ h_gps.T @ np.linalg.inv(h_gps @ Sx_bar @ h_gps.T + Sll_gps)
 
-#         # Update state vector
-#         x_dach = x_bar + K @ (L[3:,i] - h_gps @ x_bar)
+        # Update state vector
+        x_dach = x_bar + K @ (L[3:,i] - h_gps @ x_bar)
 
-#         # Covariance matrix states 
-#         Sx_dach = (np.identity(6) - K @ h_gps) @ Sx_bar
+        # Covariance matrix states 
+        Sx_dach = (np.identity(6) - K @ h_gps) @ Sx_bar
 
-#         # save current estimate
-#         xstate[i,0] = imar_data.imutime[i]
-#         xstate[i,1:7] = x_dach
+        # save current estimate
+        xstate[i,0] = imar_data.imutime[i]
+        xstate[i,1:7] = x_dach
         
-#         # update states for next iteration
-#         xk = x_dach
-#         S_xkxk = Sx_dach
+        # update states for next iteration
+        xk = x_dach
+        S_xkxk = Sx_dach
     
-#     # -------------------------------------------
-#     # Update (GPS + IMU)
-#     else:
+    # -------------------------------------------
+    # Update (GPS + IMU)
+    else:
         
-#         # Kalman Gain Matrix
-#         K = Sx_bar @ H.T @ np.linalg.inv(H @ Sx_bar @ H.T + Sll)
+        # Kalman Gain Matrix
+        K = Sx_bar @ H.T @ np.linalg.inv(H @ Sx_bar @ H.T + Sll)
 
-#         # Update state vector
-#         x_dach = x_bar + K @ (L[1:,i] - H @ x_bar)
+        # Update state vector
+        x_dach = x_bar + K @ (L[1:,i] - H @ x_bar)
 
-#         # Covariance matrix states 
-#         Sx_dach = (np.identity(6) - K @ H) @ Sx_bar
+        # Covariance matrix states 
+        Sx_dach = (np.identity(6) - K @ H) @ Sx_bar
 
-#         # save estimation
-#         xstate[i,0] = imar_data.imutime[i]
-#         xstate[i,1:7] = x_dach
+        # save estimation
+        xstate[i,0] = imar_data.imutime[i]
+        xstate[i,1:7] = x_dach
 
-#         # update states for next iteration
-#         xk = x_dach
-#         S_xkxk = Sx_dach
+        # update states for next iteration
+        xk = x_dach
+        S_xkxk = Sx_dach
 
 # end MAIN loop
 # -------------------------------------------
@@ -521,7 +533,8 @@ idx_plot = np.arange(start=0, stop=nbr, step=10, dtype=int)
 # Task 4c: Difference in position over time
 # GPS vs strapdown vs EKF
 
-# gps_time = L[0,idx_imu]
+gps_time = L[0,idx_imu].shape
+print(gps_time)
 # gps_x_gps = L[1,idx_imu]
 # gps_y_gps = L[2,idx_imu]
 
@@ -530,7 +543,8 @@ idx_plot = np.arange(start=0, stop=nbr, step=10, dtype=int)
 # strap_x = x_strapdown[idx_imu]
 # strap_y = y_strapdown[idx_imu]
 
-# kf_x_gps = xstate[idx_imu, 1]
+kf_x_gps = xstate[:, 1].shape
+print(kf_x_gps)
 # kf_y_gps = xstate[idx_imu, 2]
 
 # diff_gps_and_strap = np.sqrt((gps_x_gps - strap_x)**2 + (gps_y_gps - strap_y)**2)
@@ -553,6 +567,60 @@ idx_plot = np.arange(start=0, stop=nbr, step=10, dtype=int)
 
 # plt.legend(['GPS vs Strapdown', 'GPS vs EKF'])
 # plt.savefig("Difference in position over time")
+# plt.show()
+
+# -------------------------------------------
+# Trajectory plot
+# Task 4c: Analyze the yaw or heading direction.
+# Strapdown and EKF
+
+
+# plt.subplot(211)
+# plt.plot( imar_data.imutime[idx_plot] ,geod.rad2deg(yaw_s[idx_plot]), '-b' )
+# plt.plot( xstate[idx_plot,0], geod.rad2deg(xstate[idx_plot,3]), '-r' )
+
+# plt.ylabel('Yaw [degrees]', fontsize=12, fontweight='bold')
+# # plt.xlabel('seconds of day [s] ', fontsize=12, fontweight='bold')
+# plt.legend(['Strapdown', 'EKF'])
+# plt.title('Yaw - Strapdown and EKF', fontsize=14, fontweight='bold')
+# plt.grid(color='k', linestyle='-', linewidth=0.5)
+
+# plt.subplot(212)
+# diff = geod.rad2deg(yaw_s[idx_plot]) - geod.rad2deg(xstate[idx_plot,3])
+# plt.plot( imar_data.imutime[idx_plot] , diff, '-g' )
+
+# plt.ylabel('Difference of Yaw [degrees]', fontsize=12, fontweight='bold')
+# plt.xlabel('seconds of day [s] ', fontsize=12, fontweight='bold')
+# plt.legend(['Difference Strapdown and EKF'])
+# plt.title('Difference of Yaw - Strapdown and EKF', fontsize=14, fontweight='bold')
+# plt.grid(color='k', linestyle='-', linewidth=0.5)
+# # plt.savefig("Yaw - Strapdown and EKF")
+# plt.show()
+
+
+# -------------------------------------------
+# Trajectory plot
+# Task 4c: Analyze velocity
+# Strapdown and EKF
+
+# plt.subplot(211)
+# plt.plot( imar_data.imutime[idx_plot] , v_s_m[idx_plot], '-b' )
+# plt.plot( xstate[idx_plot,0], np.abs(xstate[idx_plot,5]), '-r' )
+
+# plt.ylabel('Velocity [m/s]', fontsize=12, fontweight='bold')
+# plt.legend(['Strapdown', 'EKF'])
+# plt.title('Velocity - Strapdown and EKF', fontsize=14, fontweight='bold')
+# plt.grid(color='k', linestyle='-', linewidth=0.5)
+
+# plt.subplot(212)
+# diff = v_s_m[idx_plot] - np.abs(xstate[idx_plot,5])
+# plt.plot( imar_data.imutime[idx_plot] , diff, '-g' )
+
+# plt.ylabel('Difference of Velocity [m/s]', fontsize=12, fontweight='bold')
+# plt.xlabel('seconds of day [s] ', fontsize=12, fontweight='bold')
+# plt.legend(['Difference Strapdown and EKF'])
+# plt.title('Difference of Velocity - Strapdown and EKF', fontsize=14, fontweight='bold')
+# plt.grid(color='k', linestyle='-', linewidth=0.5)
 # plt.show()
 
 # -------------------------------------------

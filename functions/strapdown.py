@@ -26,7 +26,8 @@ def strapdown_algorithm(accx, accy, av, dt, x, y, yaw_init):
         
         v_s_x[i] = v_before_x + a_pb_x_b * dt
         v_s_y[i] = v_before_y + a_pb_y_b * dt
-
+        v_s_m[i] = np.sqrt(v_s_x[i]**2 + v_s_y[i]**2)
+        
         p_s_x[i] = p_before_x + v_s_x[i] * dt
         p_s_y[i] = p_before_y + v_s_y[i] * dt
         
